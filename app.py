@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import time
 
 st.set_page_config(
@@ -37,7 +38,7 @@ if not st.session_state.autenticado:
 # =========================
 
 if "ultima_atualizacao" not in st.session_state:
-    st.session_state.ultima_atualizacao = datetime.now()
+    st.session_state.ultima_atualizacao = datetime.now(ZoneInfo("America/Sao_Paulo"))
 
 if "ultimo_refresh" not in st.session_state:
     st.session_state.ultimo_refresh = time.time()
@@ -45,7 +46,7 @@ if "ultimo_refresh" not in st.session_state:
 # Atualiza automaticamente a cada 5 minutos
 if time.time() - st.session_state.ultimo_refresh > 300:
     st.session_state.ultimo_refresh = time.time()
-    st.session_state.ultima_atualizacao = datetime.now()
+    st.session_state.ultima_atualizacao = datetime.now(ZoneInfo("America/Sao_Paulo"))
     st.rerun()
 
 # =========================
@@ -76,7 +77,7 @@ col_atualizar, col_horario = st.columns([1, 3])
 with col_atualizar:
     if st.button("🔄 Atualizar agora"):
         st.session_state.ultimo_refresh = time.time()
-        st.session_state.ultima_atualizacao = datetime.now()
+        st.session_state.ultima_atualizacao = datetime.now(ZoneInfo("America/Sao_Paulo"))
         st.rerun()
 
 with col_horario:
