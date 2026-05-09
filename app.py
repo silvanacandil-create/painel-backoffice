@@ -17,16 +17,27 @@ USUARIOS = st.secrets["USUARIOS"]
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
+if "usuario_logado" not in st.session_state:
+    st.session_state.usuario_logado = None
+
 if not st.session_state.autenticado:
+
     st.title("🔐 Acesso ao Painel Backoffice")
-    senha = st.text_input("Digite a senha:", type="password")
+
+    usuario = st.text_input("Usuário")
+    senha = st.text_input("Senha", type="password")
 
     if st.button("Entrar"):
-        if senha == SENHA_CORRETA:
+
+        if usuario in USUARIOS and senha == USUARIOS[usuario]:
+
             st.session_state.autenticado = True
+            st.session_state.usuario_logado = usuario
+
             st.rerun()
+
         else:
-            st.error("Senha incorreta.")
+            st.error("Usuário ou senha incorretos.")
 
     st.stop()
 
