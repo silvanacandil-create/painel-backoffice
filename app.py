@@ -124,7 +124,7 @@ elif pagina == "Inadimplência":
 
     query = """
     query {
-      allCards(pipeId: %s, first: 200) {
+      allCards(pipeId: %s, first: 500) {
         edges {
           node {
             id
