@@ -30,6 +30,15 @@ def obter_fase_anterior_ao_pagou(phases_history):
     if not phases_history:
         return "Não identificado"
 
+    fases_ignorar = [
+        "Aguardando Pagamento",
+        "Follow-Up",
+        "Follow up",
+        "Follow up - Ultimato",
+        "Respondeu",
+        "CSM - Reversão"
+    ]
+
     historico = []
 
     for item in phases_history:
@@ -45,8 +54,16 @@ def obter_fase_anterior_ao_pagou(phases_history):
     historico = sorted(historico, key=lambda x: x["entrada"])
 
     for indice, item in enumerate(historico):
-        if item["fase"] == FASE_PAGOU and indice > 0:
-            return historico[indice - 1]["fase"]
+        if item["fase"] == FASE_PAGOU:
+
+            historico_anterior = historico[:indice]
+            historico_anterior = list(reversed(historico_anterior))
+
+            for fase_anterior in historico_anterior:
+                nome_fase = fase_anterior["fase"]
+
+                if nome_fase not in fases_ignorar:
+                    return nome_fase
 
     return "Não identificado"
 
