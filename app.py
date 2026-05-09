@@ -224,7 +224,7 @@ query {
 
     dados = response.json()
 
-    cards = dados["data"]["pipe"]["cards"]["edges"]
+    cards = dados["data"]["allCards"]["edges"]
 
     total_mes = 0
     total_revertido = 0
