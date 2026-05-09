@@ -22,7 +22,7 @@ if "usuario_logado" not in st.session_state:
 
 if not st.session_state.autenticado:
 
-    col1, col2, col3 = st.columns([3, 1, 3])
+    col1, col2, col3 = st.columns([2, 1, 2])
 
     with col2:
 
