@@ -282,7 +282,4 @@ def exibir_inadimplencia():
 
     st.divider()
     exibir_metricas_porte(df)
-
-    st.divider()
-    st.subheader("Cards considerados no cálculo")
-    st.dataframe(df, use_container_width=True)
+    
