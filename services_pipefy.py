@@ -2,6 +2,7 @@ import requests
 import streamlit as st
 
 
+@st.cache_data(ttl=300)
 def buscar_cards_pipefy(token, pipe_id):
     todos_cards = []
     cursor = None
