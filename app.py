@@ -191,16 +191,16 @@ cards = buscar_cards_pipefy(token, pipe_id)
 
 st.caption(f"Cards carregados do Pipefy: {len(cards)}")
 
-    total_mes = 0
-    total_revertido = 0
-    total_pendente = 0
-    total_churn = 0
+total_mes = 0
+total_revertido = 0
+total_pendente = 0
+total_churn = 0
 
-    ticket_total = 0
-    ticket_pendente = 0
-    ticket_perdido = 0
+ticket_total = 0
+ticket_pendente = 0
+ticket_perdido = 0
 
-    dados_cards = []
+dados_cards = []
 
     for card in cards:
 
