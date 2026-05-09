@@ -13,7 +13,7 @@ from utils.formatacao import (
 
 CAMPO_VALOR_TICKET = "Valor do ticket R$"
 CAMPO_DATA_VENCIMENTO = "Data de vencimento"
-CAMPO_PORTE_EMPRESA = "Porte da empresa"
+CAMPO_PORTE_EMPRESA = "Porte/Tamanho da empresa"
 
 FASE_PAGOU = "Pagou"
 FASE_CHURN = "Churn + Encerrar contrato"
