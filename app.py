@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 import time
 
 from pages_inadimplencia import exibir_inadimplencia
+from pages_inadimplencia_anual import exibir_inadimplencia_anual
 
 st.set_page_config(
     page_title="Painel Backoffice",
@@ -47,7 +48,7 @@ st.sidebar.title("Menu")
 
 pagina = st.sidebar.radio(
     "Escolha uma opção:",
-    ["Dashboard", "Inadimplência"]
+    ["Dashboard", "Inadimplência Mensal", "Inadimplência Anual"]
 )
 
 st.title("📊 Painel Backoffice")
@@ -70,5 +71,8 @@ if pagina == "Dashboard":
     st.header("Dashboard")
     st.write("Painel geral do Backoffice.")
 
-elif pagina == "Inadimplência":
+elif pagina == "Inadimplência Mensal":
     exibir_inadimplencia()
+
+elif pagina == "Inadimplência Anual":
+    exibir_inadimplencia_anual()
