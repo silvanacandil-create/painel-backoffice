@@ -3,9 +3,9 @@ import pandas as pd
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from services.pipefy import buscar_cards_pipefy
+from services_pipefy import buscar_cards_pipefy
 
-from utils.formatacao import (
+from utils_formatacao import (
     formatar_reais,
     converter_valor_brasileiro,
     converter_data_brasileira
