@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide"
 )
 
-SENHA_CORRETA = st.secrets["SENHA_PAINEL"]
+USUARIOS = st.secrets["USUARIOS"]
 
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
