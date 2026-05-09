@@ -319,7 +319,12 @@ query {
                 total_pendente += 1
 
                 ticket_pendente += valor_ticket
-                st.divider()
+                
+# =====================================
+# DEBUG
+# =====================================
+
+st.divider()
 
 st.subheader("Cards considerados no cálculo")
 
@@ -384,7 +389,7 @@ for card in cards:
 df_debug = pd.DataFrame(dados_cards)
 
 st.dataframe(df_debug, use_container_width=True)
-
+             
     # =====================================
     # KPIs
     # =====================================
