@@ -22,22 +22,43 @@ if "usuario_logado" not in st.session_state:
 
 if not st.session_state.autenticado:
 
-    st.title("🔐 Acesso ao Painel Backoffice")
+    col1, col2, col3 = st.columns([1, 1.2, 1])
 
-    usuario = st.text_input("Usuário")
-    senha = st.text_input("Senha", type="password")
+    with col2:
 
-    if st.button("Entrar"):
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
-        if usuario in USUARIOS and senha == USUARIOS[usuario]:
+        st.title("🔐 Painel Backoffice")
 
-            st.session_state.autenticado = True
-            st.session_state.usuario_logado = usuario
+        with st.form("login_form"):
 
-            st.rerun()
+            usuario = st.text_input(
+                "Usuário",
+                placeholder="Digite seu usuário"
+            )
 
-        else:
-            st.error("Usuário ou senha incorretos.")
+            senha = st.text_input(
+                "Senha",
+                type="password",
+                placeholder="Digite sua senha"
+            )
+
+            entrar = st.form_submit_button(
+                "Entrar",
+                use_container_width=True
+            )
+
+            if entrar:
+
+                if usuario in USUARIOS and senha == USUARIOS[usuario]:
+
+                    st.session_state.autenticado = True
+                    st.session_state.usuario_logado = usuario
+
+                    st.rerun()
+
+                else:
+                    st.error("Usuário ou senha incorretos.")
 
     st.stop()
 
