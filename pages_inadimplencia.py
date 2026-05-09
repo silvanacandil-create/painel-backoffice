@@ -391,9 +391,6 @@ def exibir_inadimplencia():
     exibir_metricas_gerais(df)
 
     st.divider()
-    exibir_metricas_faixa_vencimento(df)
-
-    st.divider()
     exibir_metricas_fase_pagamento(df)
 
     st.divider()
