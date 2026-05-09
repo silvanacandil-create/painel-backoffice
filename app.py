@@ -319,6 +319,71 @@ query {
                 total_pendente += 1
 
                 ticket_pendente += valor_ticket
+                st.divider()
+
+st.subheader("Cards considerados no cálculo")
+
+dados_cards = []
+
+for card in cards:
+
+    node = card["node"]
+
+    fase = node["current_phase"]["name"]
+
+    valor_ticket = 0
+    data_vencimento = None
+
+    for campo in node["fields"]:
+
+        if campo["name"] == "Valor do ticket R$":
+
+            valor_str = campo["value"]
+
+            if valor_str:
+
+                valor_str = (
+                    valor_str
+                    .replace(".", "")
+                    .replace(",", ".")
+                )
+
+                valor_ticket = float(valor_str)
+
+        if campo["name"] == "Data de vencimento":
+
+            data_str = campo["value"]
+
+            if data_str:
+
+                try:
+
+                    data_vencimento = datetime.strptime(
+                        data_str,
+                        "%d/%m/%Y"
+                    )
+
+                except:
+                    pass
+
+    if not data_vencimento:
+        continue
+
+    if (
+        data_vencimento.month == mes
+        and data_vencimento.year == ano
+    ):
+
+        dados_cards.append({
+            "Card": node["title"],
+            "Fase": fase,
+            "Vencimento": data_vencimento.strftime("%d/%m/%Y"),
+            "Ticket": valor_ticket
+        })
+
+df_debug = pd.DataFrame(dados_cards)
+
+st.dataframe(df_debug, use_container_width=True)
 
     # =====================================
     # KPIs
