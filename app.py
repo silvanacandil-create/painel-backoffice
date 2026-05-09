@@ -120,90 +120,81 @@ elif pagina == "Inadimplência":
             st.rerun()
 
     token = st.secrets["PIPEFY_TOKEN"]
-pipe_id = st.secrets["PIPEFY_PIPE_ID"]
+    pipe_id = st.secrets["PIPEFY_PIPE_ID"]
 
-def buscar_cards_pipefy(token, pipe_id):
+    def buscar_cards_pipefy(token, pipe_id):
+        todos_cards = []
+        cursor = None
+        continuar = True
 
-    todos_cards = []
-    cursor = None
-    continuar = True
+        while continuar:
+            after = f', after: "{cursor}"' if cursor else ""
 
-    while continuar:
-
-        after = f', after: "{cursor}"' if cursor else ""
-
-        query = f"""
-        query {{
-          allCards(pipeId: {pipe_id}, first: 50{after}) {{
-            edges {{
-              cursor
-              node {{
-                id
-                title
-
-                current_phase {{
-                  name
+            query = f"""
+            query {{
+              allCards(pipeId: {pipe_id}, first: 50{after}) {{
+                edges {{
+                  cursor
+                  node {{
+                    id
+                    title
+                    current_phase {{
+                      name
+                    }}
+                    fields {{
+                      name
+                      value
+                    }}
+                  }}
                 }}
-
-                fields {{
-                  name
-                  value
+                pageInfo {{
+                  hasNextPage
+                  endCursor
                 }}
               }}
             }}
+            """
 
-            pageInfo {{
-              hasNextPage
-              endCursor
-            }}
-          }}
-        }}
-        """
+            response = requests.post(
+                "https://api.pipefy.com/graphql",
+                json={"query": query},
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json"
+                }
+            )
 
-        response = requests.post(
-            "https://api.pipefy.com/graphql",
-            json={"query": query},
-            headers={{
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json"
-            }}
-        )
+            dados = response.json()
 
-        dados = response.json()
+            if "errors" in dados:
+                st.error("Erro ao consultar Pipefy.")
+                st.json(dados)
+                st.stop()
 
-        if "errors" in dados:
+            resultado = dados["data"]["allCards"]
 
-            st.error("Erro ao consultar Pipefy.")
-            st.json(dados)
-            st.stop()
+            todos_cards.extend(resultado["edges"])
+            continuar = resultado["pageInfo"]["hasNextPage"]
+            cursor = resultado["pageInfo"]["endCursor"]
 
-        resultado = dados["data"]["allCards"]
+        return todos_cards
 
-        todos_cards.extend(resultado["edges"])
+    cards = buscar_cards_pipefy(token, pipe_id)
 
-        continuar = resultado["pageInfo"]["hasNextPage"]
+    st.caption(f"Cards carregados do Pipefy: {len(cards)}")
 
-        cursor = resultado["pageInfo"]["endCursor"]
+    total_mes = 0
+    total_revertido = 0
+    total_pendente = 0
+    total_churn = 0
 
-    return todos_cards
+    ticket_total = 0
+    ticket_pendente = 0
+    ticket_perdido = 0
 
-cards = buscar_cards_pipefy(token, pipe_id)
-
-st.caption(f"Cards carregados do Pipefy: {len(cards)}")
-
-total_mes = 0
-total_revertido = 0
-total_pendente = 0
-total_churn = 0
-
-ticket_total = 0
-ticket_pendente = 0
-ticket_perdido = 0
-
-dados_cards = []
+    dados_cards = []
 
     for card in cards:
-
         node = card["node"]
         fase = node["current_phase"]["name"]
 
@@ -224,7 +215,10 @@ dados_cards = []
 
                 if data_str:
                     try:
-                        data_vencimento = datetime.strptime(data_str, "%d/%m/%Y")
+                        data_vencimento = datetime.strptime(
+                            data_str,
+                            "%d/%m/%Y"
+                        )
                     except:
                         pass
 
@@ -232,7 +226,6 @@ dados_cards = []
             continue
 
         if data_vencimento.month == mes and data_vencimento.year == ano:
-
             total_mes += 1
             ticket_total += valor_ticket
 
@@ -288,7 +281,6 @@ dados_cards = []
         )
 
     if total_churn > 0:
-
         st.divider()
 
         col6, col7 = st.columns(2)
