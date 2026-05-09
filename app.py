@@ -14,7 +14,7 @@ st.set_page_config(
 # SENHA
 # =========================
 
-SENHA_CORRETA = "produttivo123"
+SENHA_CORRETA = st.secrets["SENHA_PAINEL"]
 
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
