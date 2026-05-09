@@ -3,7 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import time
 
-from pages.inadimplencia import exibir_inadimplencia
+from pages_inadimplencia import exibir_inadimplencia
 
 st.set_page_config(
     page_title="Painel Backoffice",
