@@ -120,47 +120,78 @@ elif pagina == "Inadimplência":
             st.rerun()
 
     token = st.secrets["PIPEFY_TOKEN"]
-    pipe_id = st.secrets["PIPEFY_PIPE_ID"]
+pipe_id = st.secrets["PIPEFY_PIPE_ID"]
 
-    query = """
-    query {
-      allCards(pipeId: %s, first: 500) {
-        edges {
-          node {
-            id
-            title
-            current_phase {
-              name
-            }
-            fields {
-              name
-              value
-            }
-          }
-        }
-      }
-    }
-    """ % pipe_id
+def buscar_cards_pipefy(token, pipe_id):
 
-    response = requests.post(
-        "https://api.pipefy.com/graphql",
-        json={"query": query},
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
-        }
-    )
+    todos_cards = []
+    cursor = None
+    continuar = True
 
-    dados = response.json()
+    while continuar:
 
-    if "errors" in dados:
-        st.error("Erro ao consultar Pipefy.")
-        st.json(dados)
-        st.stop()
+        after = f', after: "{cursor}"' if cursor else ""
 
-    cards = dados["data"]["allCards"]["edges"]
+        query = f"""
+        query {{
+          allCards(pipeId: {pipe_id}, first: 50{after}) {{
+            edges {{
+              cursor
+              node {{
+                id
+                title
 
-    total_mes = 0
+                current_phase {{
+                  name
+                }}
+
+                fields {{
+                  name
+                  value
+                }}
+              }}
+            }}
+
+            pageInfo {{
+              hasNextPage
+              endCursor
+            }}
+          }}
+        }}
+        """
+
+        response = requests.post(
+            "https://api.pipefy.com/graphql",
+            json={"query": query},
+            headers={{
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }}
+        )
+
+        dados = response.json()
+
+        if "errors" in dados:
+
+            st.error("Erro ao consultar Pipefy.")
+            st.json(dados)
+            st.stop()
+
+        resultado = dados["data"]["allCards"]
+
+        todos_cards.extend(resultado["edges"])
+
+        continuar = resultado["pageInfo"]["hasNextPage"]
+
+        cursor = resultado["pageInfo"]["endCursor"]
+
+    return todos_cards
+
+cards = buscar_cards_pipefy(token, pipe_id)
+
+st.caption(f"Cards carregados do Pipefy: {len(cards)}")
+
+total_mes = 0
     total_revertido = 0
     total_pendente = 0
     total_churn = 0
