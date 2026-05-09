@@ -390,56 +390,32 @@ df_debug = pd.DataFrame(dados_cards)
 
 st.dataframe(df_debug, use_container_width=True)
              
-    # =====================================
-    # KPIs
-    # =====================================
+# =====================================
+# KPIs
+# =====================================
 
-    col1, col2, col3 = st.columns(3)
+col1, col2, col3 = st.columns(3)
 
-    with col1:
+with col1:
 
-        st.metric(
-            "Total do mês",
-            total_mes
-        )
+    st.metric(
+        "Total do mês",
+        total_mes
+    )
 
-    with col2:
+with col2:
 
-        st.metric(
-            "Total revertido",
-            total_revertido
-        )
+    st.metric(
+        "Total revertido",
+        total_revertido
+    )
 
-    with col3:
+with col3:
 
-        st.metric(
-            "Total pendente",
-            total_pendente
-        )
-
-    st.divider()
-
-    col4, col5 = st.columns(2)
-
-    with col4:
-
-        st.metric(
-            "Ticket total",
-            f"R$ {ticket_total:,.2f}"
-            .replace(",", "X")
-            .replace(".", ",")
-            .replace("X", ".")
-        )
-
-    with col5:
-
-        st.metric(
-            "Ticket pendente",
-            f"R$ {ticket_pendente:,.2f}"
-            .replace(",", "X")
-            .replace(".", ",")
-            .replace("X", ".")
-        )
+    st.metric(
+        "Total pendente",
+        total_pendente
+    )
 
     # =====================================
     # CHURN
