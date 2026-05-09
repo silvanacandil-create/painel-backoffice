@@ -192,28 +192,26 @@ elif pagina == "Inadimplência":
     pipe_id = st.secrets["PIPEFY_PIPE_ID"]
 
     query = """
-    query {
-      pipe(id: %s) {
-        cards(first: 200) {
-          edges {
-            node {
-              id
-              title
+query {
+  allCards(pipeId: %s, first: 200) {
+    edges {
+      node {
+        id
+        title
 
-              current_phase {
-                name
-              }
+        current_phase {
+          name
+        }
 
-              fields {
-                name
-                value
-              }
-            }
-          }
+        fields {
+          name
+          value
         }
       }
     }
-    """ % pipe_id
+  }
+}
+""" % pipe_id
 
     response = requests.post(
         "https://api.pipefy.com/graphql",
