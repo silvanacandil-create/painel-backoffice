@@ -4,12 +4,12 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from services.pipefy import buscar_cards_pipefy
+
 from utils.formatacao import (
     formatar_reais,
     converter_valor_brasileiro,
     converter_data_brasileira
 )
-
 
 CAMPO_VALOR_TICKET = "Valor do ticket R$"
 CAMPO_DATA_VENCIMENTO = "Data de vencimento"
