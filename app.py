@@ -78,9 +78,6 @@ if "mes_offset" not in st.session_state:
 
 st.sidebar.title("Menu")
 
-st.sidebar.success(
-)
-
 pagina = st.sidebar.radio(
     "Escolha uma opção:",
     ["Dashboard", "Inadimplência Mensal", "Inadimplência Anual"]
