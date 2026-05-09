@@ -56,8 +56,9 @@ if "mes_offset" not in st.session_state:
     st.session_state.mes_offset = 0
 
 st.sidebar.title("Menu")
-    st.sidebar.success(
-        f"Logado como: {st.session_state.usuario_logado}"
+
+st.sidebar.success(
+    f"Logado como: {st.session_state.usuario_logado}"
 )
 
 pagina = st.sidebar.radio(
