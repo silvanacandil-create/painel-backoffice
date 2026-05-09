@@ -62,7 +62,8 @@ pagina = st.sidebar.radio(
         "Clientes",
         "NFS-e",
         "Financeiro",
-        "Automações"
+        "Automações",
+        "Mapeamento Pipefy",
     ]
 )
 
@@ -120,3 +121,57 @@ elif pagina == "Automações":
 
     st.header("Automações")
     st.write("Área de automações.")
+
+elif pagina == "Automações":
+
+    st.header("Automações")
+    st.write("Área de automações.")
+
+elif pagina == "Mapeamento Pipefy":
+
+    import requests
+
+    st.header("Mapeamento Pipefy")
+
+    token = st.secrets["PIPEFY_TOKEN"]
+    pipe_id = st.secrets["PIPEFY_PIPE_ID"]
+
+    query = """
+    query {
+      pipe(id: %s) {
+        name
+        phases {
+          name
+          cards(first: 5) {
+            edges {
+              node {
+                id
+                title
+                current_phase {
+                  name
+                }
+                fields {
+                  name
+                  value
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    """ % pipe_id
+
+    response = requests.post(
+        "https://api.pipefy.com/graphql",
+        json={"query": query},
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+    )
+
+    dados = response.json()
+
+    st.write("Resposta Pipefy:")
+    st.json(dados)
