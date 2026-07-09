@@ -8,3 +8,17 @@ def get_supabase_client():
     key = st.secrets["SUPABASE_KEY"]
 
     return create_client(url, key)
+
+
+def testar_conexao():
+    supabase = get_supabase_client()
+
+    response = (
+        supabase
+        .table("movimentacoes")
+        .select("id_origem")
+        .limit(1)
+        .execute()
+    )
+
+    return response.data
