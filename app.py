@@ -81,7 +81,7 @@ st.sidebar.title("Menu")
 
 pagina = st.sidebar.radio(
     "Escolha uma opção:",
-    ["Dashboard", "Inadimplência Mensal", "Inadimplência Anual"]
+    ["Dashboard", "Fluxo de Caixa", "Inadimplência Mensal", "Inadimplência Anual"]
 )
 
 st.title("📊 Painel Backoffice")
@@ -103,6 +103,9 @@ with col_horario:
 if pagina == "Dashboard":
     st.header("Dashboard")
     st.write("Painel geral do Backoffice.")
+
+if pagina == "Fluxo de Caixa":
+    render()
 
 elif pagina == "Inadimplência Mensal":
     exibir_inadimplencia()
