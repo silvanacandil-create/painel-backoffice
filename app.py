@@ -1,6 +1,7 @@
 import streamlit as st
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from pages_fluxo_caixa import render
 import time
 
 from pages_inadimplencia import exibir_inadimplencia
