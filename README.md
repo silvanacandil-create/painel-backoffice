@@ -1,2 +1,2 @@
 # painel-backoffice
-Gestão Financeira • Inadimplência • Indicadores
+Financial Intelligence
