@@ -1,2 +1,2 @@
 # painel-backoffice
-Painel de gerenciamento Back Office
+Gestão Financeira • Inadimplência • Indicadores
