@@ -1,96 +1,127 @@
-import streamlit as st
-import pandas as pd
-from datetime import datetime
-from zoneinfo import ZoneInfo
+        .agg(
+            Total=("Card", "count"),
+            Pendentes=("Status", lambda x: (x == "Pendente").sum()),
+            Revertidos=("Status", lambda x: (x == "Revertido").sum()),
+            Churn=("Status", lambda x: (x == "Churn").sum()),
+            Ticket_total=("Ticket", "sum"),
+            Ticket_pendente=("Ticket", lambda x: x[df.loc[x.index, "Status"] == "Pendente"].sum()),
+            Ticket_revertido=("Ticket", lambda x: x[df.loc[x.index, "Status"] == "Revertido"].sum())
+        )
+        .reset_index()
+    )
 
-from services_pipefy import buscar_cards_pipefy
+    resumo_porte["Taxa de pendência"] = (
+        resumo_porte["Pendentes"] / resumo_porte["Total"] * 100
+    ).round(1).astype(str) + "%"
 
-from utils_formatacao import (
-    formatar_reais,
-    converter_valor_brasileiro,
-    converter_data_brasileira
-)
+    resumo_porte["Taxa de reversão"] = (
+        resumo_porte["Revertidos"] / resumo_porte["Total"] * 100
+    ).round(1).astype(str) + "%"
 
-CAMPO_VALOR_TICKET = "Valor do ticket R$"
-CAMPO_DATA_VENCIMENTO = "Data de vencimento"
-CAMPO_PORTE_EMPRESA = "Porte/Tamanho da empresa"
+    resumo_porte["Ticket total"] = resumo_porte["Ticket_total"].apply(formatar_reais)
+    resumo_porte["Ticket pendente"] = resumo_porte["Ticket_pendente"].apply(formatar_reais)
+    resumo_porte["Ticket revertido"] = resumo_porte["Ticket_revertido"].apply(formatar_reais)
 
-FASE_PAGOU = "Pagou"
-FASE_CHURN = "Churn + Encerrar contrato"
-FASE_CHURN_AVISO_PREVIO = "Churn - Não pagou o aviso prévio"
+    resumo_porte = resumo_porte.drop(
+        columns=["Ticket_total", "Ticket_pendente", "Ticket_revertido"]
+    )
+
+    resumo_porte = resumo_porte.sort_values("Total", ascending=False)
+
+    st.dataframe(resumo_porte, use_container_width=True)
+
+    porte_mais_devedor = resumo_porte.iloc[0]["Porte"] if not resumo_porte.empty else None
+
+    if porte_mais_devedor:
+        st.info(f"O porte com mais inadimplência no mês foi: **{porte_mais_devedor}**.")
 
 
-def obter_valor_campo(fields, nome_campo):
-    for campo in fields:
-        if campo["name"] == nome_campo:
-            return campo["value"]
-    return None
+def exibir_inadimplencia():
+    st.header("Inadimplência")
 
+    hoje = datetime.now(ZoneInfo("America/Sao_Paulo"))
 
-def obter_fase_anterior_ao_pagou(phases_history):
-    if not phases_history:
-        return "Não identificado"
+    mes = hoje.month + st.session_state.mes_offset
+    ano = hoje.year
 
-    fases_ignorar = [
-        "Aguardando Pagamento",
-        "Follow-Up",
-        "Follow up",
-        "Follow up - Ultimato",
-        "Respondeu",
-        "CSM - Reversão"
+    while mes > 12:
+        mes -= 12
+        ano += 1
+
+    while mes < 1:
+        mes += 12
+        ano -= 1
+
+    nomes_meses = [
+        "Janeiro", "Fevereiro", "Março", "Abril",
+        "Maio", "Junho", "Julho", "Agosto",
+        "Setembro", "Outubro", "Novembro", "Dezembro"
     ]
 
-    historico = []
+    col_mes1, col_mes2, col_mes3 = st.columns([1, 2, 1])
 
-    for item in phases_history:
-        fase = item.get("phase", {}).get("name")
-        entrada = item.get("firstTimeIn") or item.get("lastTimeIn")
+    with col_mes1:
+        if st.button("⬅️ Mês anterior"):
+            st.session_state.mes_offset -= 1
+            st.rerun()
 
-        if fase and entrada:
-            historico.append({
-                "fase": fase,
-                "entrada": entrada
-            })
+    with col_mes2:
+        st.subheader(f"{nomes_meses[mes - 1]}/{ano}")
 
-    historico = sorted(historico, key=lambda x: x["entrada"])
+    with col_mes3:
+        if st.button("Próximo mês ➡️"):
+            st.session_state.mes_offset += 1
+            st.rerun()
 
-    for indice, item in enumerate(historico):
-        if item["fase"] == FASE_PAGOU:
+    token = st.secrets["PIPEFY_TOKEN"]
+    pipe_id = st.secrets["PIPEFY_PIPE_ID"]
 
-            historico_anterior = historico[:indice]
-            historico_anterior = list(reversed(historico_anterior))
+    cards = buscar_cards_pipefy(token, pipe_id)
 
-            for fase_anterior in historico_anterior:
-                nome_fase = fase_anterior["fase"]
+    st.caption(f"Cards carregados do Pipefy: {len(cards)}")
 
-                if nome_fase not in fases_ignorar:
-                    return nome_fase
+    # Mantém a data de vencimento como referência do período.
+    df_total = preparar_dados_cards(cards, mes, ano)
 
-    return "Não identificado"
+    if df_total.empty:
+        st.warning("Nenhum card encontrado para o mês selecionado.")
+        return
 
+    # O histórico permanece no Pipefy, mas a fase abaixo não entra nos cálculos.
+    df = df_total[
+        df_total["Fase atual"] != FASE_CHURN_AVISO_PREVIO
+    ].copy()
 
-def obter_data_pagamento(phases_history):
-    if not phases_history:
-        return None
+    total_cards = len(df_total)
+    cards_contabilizados = len(df)
+    cards_aviso_previo = total_cards - cards_contabilizados
 
-    for item in phases_history:
-        fase = item.get("phase", {}).get("name")
+    st.subheader("Visão geral dos cards")
+    col1, col2, col3 = st.columns(3)
 
-        if fase == FASE_PAGOU:
-            data_pagamento = item.get("firstTimeIn") or item.get("lastTimeIn")
+    with col1:
+        st.metric("Total de cards", total_cards)
 
-            if data_pagamento:
-                try:
-                    return datetime.fromisoformat(
-                        data_pagamento.replace("Z", "+00:00")
-                    )
-                except:
-                    return None
+    with col2:
+        st.metric("Cards contabilizados", cards_contabilizados)
 
-    return None
+    with col3:
+        st.metric("Churn - Aviso prévio não pago", cards_aviso_previo)
 
+    st.caption("Referência: data de vencimento no mês selecionado.")
 
-def obter_faixa_vencimento(data_vencimento):
-    dia = data_vencimento.day
+    if df.empty:
+        st.info("Todos os cards do período estão na fase de aviso prévio não pago; não há cards contabilizados nos demais indicadores.")
+        return
 
-    if dia <= 10:
+    st.divider()
+    exibir_metricas_gerais(df)
+
+    st.divider()
+    exibir_metricas_faixa_vencimento(df)
+
+    st.divider()
+    exibir_metricas_fase_pagamento(df)
+
+    st.divider()
+    exibir_metricas_porte(df)
