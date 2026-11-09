@@ -1,3 +1,323 @@
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from services_pipefy import buscar_cards_pipefy
+
+from utils_formatacao import (
+    formatar_reais,
+    converter_valor_brasileiro,
+    converter_data_brasileira
+)
+
+CAMPO_VALOR_TICKET = "Valor do ticket R$"
+CAMPO_DATA_VENCIMENTO = "Data de vencimento"
+CAMPO_PORTE_EMPRESA = "Porte/Tamanho da empresa"
+
+FASE_PAGOU = "Pagou"
+FASE_CHURN = "Churn + Encerrar contrato"
+FASE_CHURN_AVISO_PREVIO = "Churn - Não pagou o aviso prévio"
+
+
+def obter_valor_campo(fields, nome_campo):
+    for campo in fields:
+        if campo["name"] == nome_campo:
+            return campo["value"]
+    return None
+
+
+def obter_fase_anterior_ao_pagou(phases_history):
+    if not phases_history:
+        return "Não identificado"
+
+    fases_ignorar = [
+        "Aguardando Pagamento",
+        "Follow-Up",
+        "Follow up",
+        "Follow up - Ultimato",
+        "Respondeu",
+        "CSM - Reversão"
+    ]
+
+    historico = []
+
+    for item in phases_history:
+        fase = item.get("phase", {}).get("name")
+        entrada = item.get("firstTimeIn") or item.get("lastTimeIn")
+
+        if fase and entrada:
+            historico.append({
+                "fase": fase,
+                "entrada": entrada
+            })
+
+    historico = sorted(historico, key=lambda x: x["entrada"])
+
+    for indice, item in enumerate(historico):
+        if item["fase"] == FASE_PAGOU:
+
+            historico_anterior = historico[:indice]
+            historico_anterior = list(reversed(historico_anterior))
+
+            for fase_anterior in historico_anterior:
+                nome_fase = fase_anterior["fase"]
+
+                if nome_fase not in fases_ignorar:
+                    return nome_fase
+
+    return "Não identificado"
+
+
+def obter_data_pagamento(phases_history):
+    if not phases_history:
+        return None
+
+    for item in phases_history:
+        fase = item.get("phase", {}).get("name")
+
+        if fase == FASE_PAGOU:
+            data_pagamento = item.get("firstTimeIn") or item.get("lastTimeIn")
+
+            if data_pagamento:
+                try:
+                    return datetime.fromisoformat(
+                        data_pagamento.replace("Z", "+00:00")
+                    )
+                except:
+                    return None
+
+    return None
+
+
+def obter_faixa_vencimento(data_vencimento):
+    dia = data_vencimento.day
+
+    if dia <= 10:
+        return "01 a 10"
+    elif dia <= 19:
+        return "11 a 19"
+    else:
+        return "20 ao fim do mês"
+
+
+def preparar_dados_cards(cards, mes, ano):
+    dados_cards = []
+
+    for card in cards:
+        node = card["node"]
+
+        fase_atual = node["current_phase"]["name"]
+        fields = node["fields"]
+
+        valor_ticket = converter_valor_brasileiro(
+            obter_valor_campo(fields, CAMPO_VALOR_TICKET)
+        )
+
+        data_vencimento = converter_data_brasileira(
+            obter_valor_campo(fields, CAMPO_DATA_VENCIMENTO)
+        )
+
+        porte_empresa = (
+            obter_valor_campo(fields, CAMPO_PORTE_EMPRESA)
+            or "Não informado"
+        )
+
+        if not data_vencimento:
+            continue
+
+        if data_vencimento.month != mes or data_vencimento.year != ano:
+            continue
+
+        status = "Pendente"
+        fase_antes_pagou = ""
+        data_pagamento = None
+        dias_para_pagar = None
+
+        if fase_atual == FASE_PAGOU:
+            status = "Revertido"
+
+            fase_antes_pagou = obter_fase_anterior_ao_pagou(
+                node.get("phases_history")
+            )
+
+            data_pagamento = obter_data_pagamento(
+                node.get("phases_history")
+            )
+
+            if data_pagamento:
+                dias_para_pagar = (
+                    data_pagamento.date()
+                    - data_vencimento.date()
+                ).days
+
+        elif fase_atual == FASE_CHURN:
+            status = "Churn"
+
+        dados_cards.append({
+            "Card": node["title"],
+            "URL": node.get("url"),
+            "Fase atual": fase_atual,
+            "Status": status,
+            "Fase antes de pagar": fase_antes_pagou,
+            "Vencimento": data_vencimento.strftime("%d/%m/%Y"),
+            "Data pagamento": data_pagamento.strftime("%d/%m/%Y") if data_pagamento else "",
+            "Dias para pagar": dias_para_pagar,
+            "Faixa vencimento": obter_faixa_vencimento(data_vencimento),
+            "Ticket": valor_ticket,
+            "Porte": porte_empresa
+        })
+
+    return pd.DataFrame(dados_cards)
+
+
+def exibir_metricas_gerais(df):
+    total_mes = len(df)
+
+    total_revertido = len(df[df["Status"] == "Revertido"])
+    total_pendente = len(df[df["Status"] == "Pendente"])
+    total_churn = len(df[df["Status"] == "Churn"])
+
+    ticket_total = df["Ticket"].sum()
+    ticket_revertido = df[df["Status"] == "Revertido"]["Ticket"].sum()
+    ticket_pendente = df[df["Status"] == "Pendente"]["Ticket"].sum()
+    ticket_perdido = df[df["Status"] == "Churn"]["Ticket"].sum()
+
+    taxa_reversao = (total_revertido / total_mes * 100) if total_mes else 0
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("Total do mês", total_mes)
+
+    with col2:
+        st.metric("Total revertido", total_revertido)
+
+    with col3:
+        st.metric("Total pendente", total_pendente)
+
+    with col4:
+        st.metric("Taxa de reversão", f"{taxa_reversao:.1f}%")
+
+    st.divider()
+
+    col5, col6, col7 = st.columns(3)
+
+    with col5:
+        st.metric("Ticket total", formatar_reais(ticket_total))
+
+    with col6:
+        st.metric("Ticket revertido", formatar_reais(ticket_revertido))
+
+    with col7:
+        st.metric("Ticket pendente", formatar_reais(ticket_pendente))
+
+    if total_churn > 0:
+        st.divider()
+
+        col8, col9 = st.columns(2)
+
+        with col8:
+            st.metric("Churn", total_churn)
+
+        with col9:
+            st.metric("Ticket perdido", formatar_reais(ticket_perdido))
+
+
+def exibir_metricas_faixa_vencimento(df):
+    st.subheader("Tempo médio de pagamento por faixa de vencimento")
+
+    ordem_faixas = ["01 a 10", "11 a 19", "20 ao fim do mês"]
+
+    resumo = (
+        df
+        .groupby("Faixa vencimento")
+        .agg(
+            Total=("Card", "count"),
+            Pagaram=("Status", lambda x: (x == "Revertido").sum()),
+            Pendentes=("Status", lambda x: (x == "Pendente").sum()),
+            Churn=("Status", lambda x: (x == "Churn").sum()),
+            Ticket_total=("Ticket", "sum"),
+            Ticket_revertido=("Ticket", lambda x: x[df.loc[x.index, "Status"] == "Revertido"].sum()),
+            Media_dias_para_pagar=("Dias para pagar", "mean")
+        )
+        .reset_index()
+    )
+
+    resumo["Faixa vencimento"] = pd.Categorical(
+        resumo["Faixa vencimento"],
+        categories=ordem_faixas,
+        ordered=True
+    )
+
+    resumo = resumo.sort_values("Faixa vencimento")
+
+    resumo["Taxa de pagamento"] = (
+        resumo["Pagaram"] / resumo["Total"] * 100
+    ).round(1).astype(str) + "%"
+
+    resumo["Média dias para pagar"] = (
+        resumo["Media_dias_para_pagar"]
+        .fillna(0)
+        .round(1)
+    )
+
+    resumo["Ticket total"] = resumo["Ticket_total"].apply(formatar_reais)
+    resumo["Ticket revertido"] = resumo["Ticket_revertido"].apply(formatar_reais)
+
+    resumo = resumo.drop(
+        columns=[
+            "Ticket_total",
+            "Ticket_revertido",
+            "Media_dias_para_pagar"
+        ]
+    )
+
+    st.dataframe(resumo, use_container_width=True)
+
+    df_revertido = df[df["Status"] == "Revertido"].copy()
+
+    if not df_revertido.empty:
+        media_geral = df_revertido["Dias para pagar"].mean()
+
+        st.info(
+            f"Em média, os clientes revertidos demoraram "
+            f"**{media_geral:.1f} dias** para pagar após o vencimento."
+        )
+
+
+def exibir_metricas_fase_pagamento(df):
+    df_revertido = df[df["Status"] == "Revertido"].copy()
+
+    if df_revertido.empty:
+        st.info("Ainda não há cards revertidos neste mês.")
+        return
+
+    st.subheader("Em qual fase os clientes mais pagaram?")
+
+    resumo_fase = (
+        df_revertido
+        .groupby("Fase antes de pagar")
+        .agg(
+            Quantidade=("Card", "count"),
+            Ticket_revertido=("Ticket", "sum")
+        )
+        .reset_index()
+        .sort_values("Quantidade", ascending=False)
+    )
+
+    resumo_fase["Ticket revertido"] = resumo_fase["Ticket_revertido"].apply(formatar_reais)
+    resumo_fase = resumo_fase.drop(columns=["Ticket_revertido"])
+
+    st.dataframe(resumo_fase, use_container_width=True)
+
+
+def exibir_metricas_porte(df):
+    st.subheader("Inadimplência por porte da empresa")
+
+    resumo_porte = (
+        df
+        .groupby("Porte")
         .agg(
             Total=("Card", "count"),
             Pendentes=("Status", lambda x: (x == "Pendente").sum()),
