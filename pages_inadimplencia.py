@@ -94,3 +94,8 @@ def obter_faixa_vencimento(data_vencimento):
     dia = data_vencimento.day
 
     if dia <= 10:
+        return "01 a 10"
+    elif dia <= 19:
+        return "11 a 19"
+    else:
+        return "20 ao fim do mês"
