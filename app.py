@@ -17,6 +17,7 @@ from pages_indicadores_cs import (
     preparar_base_indicadores,
 )
 from services_pipefy import buscar_cards_pipefy
+from github_sync import executar_sincronizacao
 
 
 st.set_page_config(
@@ -266,20 +267,24 @@ col_atualizar, col_horario = st.columns([1, 4])
 
 with col_atualizar:
     if st.button("🔄 Atualizar agora"):
+        with st.spinner("Sincronizando cards com o Pipefy pelo GitHub Actions..."):
+            try:
+                url_execucao = executar_sincronizacao()
+            except Exception as erro:
+                st.error(f"Nao foi possivel confirmar a sincronizacao: {erro}")
+                st.stop()
 
-        # Limpa o cache da consulta ao Pipefy.
         buscar_cards_pipefy.clear()
-
-        # Limpa o cache dos indicadores de CS.
         preparar_base_indicadores.clear()
-
-        # Atualiza o horário da última consulta.
         st.session_state.ultimo_refresh = time.time()
-        st.session_state.ultima_atualizacao = (
-            datetime.now(FUSO_HORARIO)
+        st.session_state.ultima_atualizacao = datetime.now(FUSO_HORARIO)
+        st.session_state.mensagem_sincronizacao = (
+            f"Sincronizacao concluida! [Ver execucao no GitHub]({url_execucao})"
         )
-
         st.rerun()
+
+if st.session_state.pop("mensagem_sincronizacao", None):
+    st.success("Sincronizacao concluida e indicadores recarregados.")
 
 
 with col_horario:
