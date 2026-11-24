@@ -3,7 +3,7 @@ name: Sincronizar Pipefy com Supabase
 on:
   schedule:
     # 08:00 em Brasilia (UTC-3), segunda, quarta e sexta.
-    - cron: '0 11 * * 1,3,5'
+   - cron: "0 11 * * *"
   workflow_dispatch:
 
 permissions:
