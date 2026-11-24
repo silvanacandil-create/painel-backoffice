@@ -1,10 +1,15 @@
 name: Sincronizar Pipefy com Supabase
+run-name: Sincronizar Pipefy ${{ inputs.request_id || github.event_name }}
 
 on:
   schedule:
-    # 08:00 em Brasilia (UTC-3), segunda, quarta e sexta.
-   - cron: "0 11 * * *"
+    - cron: '0 11 * * *'
   workflow_dispatch:
+    inputs:
+      request_id:
+        description: 'Identificador da solicitacao do painel'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -20,15 +25,12 @@ jobs:
     steps:
       - name: Baixar codigo do repositorio
         uses: actions/checkout@v4
-
       - name: Preparar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
       - name: Instalar dependencias
         run: python -m pip install --disable-pip-version-check requests
-
       - name: Sincronizar cards atualizados
         env:
           PIPEFY_TOKEN: ${{ secrets.PIPEFY_TOKEN }}
