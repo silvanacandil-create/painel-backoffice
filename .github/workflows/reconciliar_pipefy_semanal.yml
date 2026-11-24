@@ -1,4 +1,4 @@
-name: Reconciliar cards Pipefy (simulacao)
+name: Reconciliar cards Pipefy (semanal)
 on:
   schedule:
     - cron: '0 12 * * 0'
@@ -24,4 +24,4 @@ jobs:
           PIPEFY_PIPE_ID: ${{ secrets.PIPEFY_PIPE_ID }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: python reconciliacao_pipefy_semanal.py
+        run: python reconciliacao_pipefy_semanal.py --aplicar
